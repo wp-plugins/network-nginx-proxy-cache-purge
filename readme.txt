@@ -2,7 +2,7 @@
 Contributors: wpmuguru
 Tags: network, multisite, post, custom, nginx, cache, purge
 Requires at least: 3.2
-Tested up to: 3.2.1
+Tested up to: 3.3
 Stable tag: trunk
 
 Event driven and on demand Nginx front end proxy cache purge utility.
