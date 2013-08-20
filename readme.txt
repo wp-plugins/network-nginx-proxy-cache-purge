@@ -1,15 +1,15 @@
 === Network Nginx Proxy Cache Purge ===
 Contributors: wpmuguru
 Tags: network, multisite, post, custom, nginx, cache, purge
-Requires at least: 3.2
-Tested up to: 3.3
-Stable tag: trunk
+Requires at least: 3.5
+Tested up to: 3.6
+Stable tag: 0.2
 
 Event driven and on demand Nginx front end proxy cache purge utility.
 
 == Description ==
 
-A flexible and customizable event driven cache purge plugin to work in conjuction with Nginx configured as a front end proxy to a WordPress install. For use with either single WP sites or in a WP network. If you have a single WP site without custom post types or mobile support the [Nginx Proxy Cache Plugin](http://wordpress.org/extend/plugins/nginx-proxy-cache-purge/) is simpler and will probably meet your needs.
+A flexible and customizable event driven cache purge plugin to work in conjuction with Nginx configured as a front end proxy to a WordPress install. For use with either single WordPress sites or in a WordPress network. If you have a single WordPress site without custom post types or mobile support the [Nginx Proxy Cache Plugin](http://wordpress.org/extend/plugins/nginx-proxy-cache-purge/) is simpler and will probably meet your needs.
 
 *Features*
 
@@ -39,6 +39,10 @@ This plugin was written by [Ron Rennick](http://ronandandrea.com/) in collaborat
 1. Configure Nginx per [Network Nginx Proxy Cache Purge Configuration Guide](http://wpebooks.com/wp-content/plugins/download-monitor/download.php?id=3)
 
 == Changelog ==
+
+= 0.3 =
+* fix parameter on get_object_terms
+* automatically include custom taxonomies on CPTs
 
 = 0.2 =
 * Original version.

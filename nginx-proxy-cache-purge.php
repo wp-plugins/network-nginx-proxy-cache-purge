@@ -3,7 +3,7 @@
 Plugin Name: Network Nginx Proxy Cache Purge
 Plugin URI: http://wpebooks.com/
 Description: Event driven and on demand nginx proxy cache purge utility.
-Version: 0.2
+Version: 0.3
 Author: Ron Rennick
 Author URI: http://ronandandrea.com/
 Network: true
@@ -58,19 +58,23 @@ class RA_Nginx_Proxy_Cache_Purge {
 		$this->_purge_slug = apply_filters( 'ranpcp_purge_slug', 'purge' );
 		$mobile_slug = '';
 		foreach( array( 'WPtouchPlugin', 'WPtouchPro' ) as $touch ) {
-			if( class_exists( $touch ) ) {
+
+			if ( class_exists( $touch ) ) {
+
 				$mobile_slug = 'mobilepurge';
 				break;
+
 			}
 		}
+
 		$this->_mobile_purge_slug = apply_filters( 'ranpcp_mobile_purge_slug', $mobile_slug );
 		
 		// turn on the stats in the footer source
-		if( apply_filters( 'ranpcp_show_stats', false ) )
+		if ( apply_filters( 'ranpcp_show_stats', false ) )
 			add_action( 'wp_footer', array( $this, 'wp_footer' ) );
 
 		// turn on the cache purge on comment
-		if( !apply_filters( 'ranpcp_purge_on_comment', false ) )
+		if ( ! apply_filters( 'ranpcp_purge_on_comment', false ) )
 			add_action( 'wp_update_comment_count', array( $this, 'unhook_purge' ) );
 
 	}
@@ -79,28 +83,30 @@ class RA_Nginx_Proxy_Cache_Purge {
 	*/
 	function purge_single_post() {
 
-		if( !isset( $_GET['post_id'] ) || !isset( $_GET['_wpnonce'] ) || !wp_verify_nonce( $_GET['_wpnonce'], 'ranpcp-purge-post' ) )
+		if ( ! isset( $_GET['post_id'] ) || ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'ranpcp-purge-post' ) )
 			return;
 
 		$post = get_post( $_GET['post_id'] );
-		if( empty( $post ) )
+		if ( empty( $post ) )
 			return;
 
 		$cap = apply_filters( 'ranpcp_purge_capability', 'edit_others_' . $post->post_type . 's', $post->post_type );
-		if( current_user_can( $cap ) ) {
+		if ( ! current_user_can( $cap ) )
+			return;
 
-			$this->_purge_comment_feeds = ( $post->comment_status == 'open' || $post->ping_status == 'open' );
-			$this->purge_post( $post->ID, $post, false );
-			wp_redirect( wp_get_referer() );
-			exit;
+		$this->_purge_comment_feeds = ( $post->comment_status == 'open' || $post->ping_status == 'open' );
+		$this->purge_post( $post->ID, $post, false );
+		wp_redirect( wp_get_referer() );
+		exit;
 
-		}
 	}
 	/*
 	Unhook purge on comment
 	*/
 	function unhook_purge() {
+
 		remove_action( 'edit_post', array( $this, 'purge_post' ), 10, 2 );
+
 	}
 	/*
 	Purge a post
@@ -132,48 +138,51 @@ class RA_Nginx_Proxy_Cache_Purge {
 
 		$urls = array();
 
-		if( in_array( $post_type, array( 'nav_menu_item', 'revision' ) ) || in_array( $post_status, array( 'future', 'inherit', 'auto-draft' ) ) )
+		if ( in_array( $post_type, array( 'nav_menu_item', 'revision' ) ) || in_array( $post_status, array( 'future', 'inherit', 'auto-draft' ) ) )
 			return $urls;
 
 		// add this post
-		if( $post_status == 'publish' ) {
+		if ( $post_status == 'publish' ) {
 
 			$urls[$post_type] = $permalink = get_permalink( $post_id );
-			if( $this->_purge_comment_feeds )
+			if ( $this->_purge_comment_feeds )
 				$urls[$post_type . '_feed'] = $urls[$post_type] . 'feed/';
 
 		}
 
-		if( !$all )
+		if ( ! $all )
 			return $urls;
 
 		// add home page
 		$urls['home'] = home_url( '/' );
 
 		// add site feeds
-		if( $post_type != 'page' ) {
+		if ( $post_type != 'page' ) {
 
 			$urls['home_feed'] = $urls['home'] . 'feed/';
-			if( $this->_purge_comment_feeds )
+			if ( $this->_purge_comment_feeds )
 				$urls['home_comment_feed'] = $urls['home'] . 'comments/feed/';
 
 		}
 
-		if( $post_type != 'post' )
-			return $urls;
-		
-		// blog page
-		if( get_option( 'show_on_front' ) == 'page' ) {
+		// taxonomy archives
+		$taxonomies = get_object_taxonomies( $post_type );
+		if ( ! empty( $taxonomies ) ) {
 
-			$blog_page = get_option( 'page_for_posts' );
-			$urls['blog'] = get_permalink( $blog_page );
+			$tax_urls = $this->get_purge_taxonomy_urls( $post_id, $taxonomies );
+			$urls = array_merge( $urls, $tax_urls );
 
 		}
 
-		// taxonomy archives
-		$tax_urls = $this->get_purge_taxonomy_urls( $post_id, array( 'category', 'post_tag' ) );
+		if ( $post_type != 'post' || get_option( 'show_on_front' ) != 'page' )
+			return $urls;
+
+		// blog page
+		$blog_page = get_option( 'page_for_posts' );
+		$urls['blog'] = get_permalink( $blog_page );
 		
-		return array_merge( $urls, $tax_urls );
+		return $urls;
+
 	}
 	/*
 	Build a list of taxonomy urls to purge
@@ -185,8 +194,8 @@ class RA_Nginx_Proxy_Cache_Purge {
 		
 		foreach( (array)$taxonomies as $tax ) {
 
-			$terms = wp_get_object_terms( $post_id, $tax, array( 'fields' => 'slug' ) );
-			if( empty( $terms ) )
+			$terms = wp_get_object_terms( $post_id, $tax, array( 'fields' => 'slugs' ) );
+			if ( empty( $terms ) )
 				continue;
 
 			$tax_base = $wp_rewrite->get_extra_permastruct( $tax );
@@ -207,7 +216,7 @@ class RA_Nginx_Proxy_Cache_Purge {
 	*/
 	function purge_urls( $args = array() ) {
 
-		if( !$this->_purge_slug )
+		if ( ! $this->_purge_slug )
 			return;
 
 		$urls = array();
@@ -215,19 +224,19 @@ class RA_Nginx_Proxy_Cache_Purge {
 		foreach( (array)$args as $url ) {
 
 			$url = trim( $url );
-			if( !$url )
+			if ( ! $url )
 				continue;
 
-			if( preg_match( '|^(.*://[^/]+)(/.*)$|', $url, $m ) ) {
+			if ( ! preg_match( '|^(.*://[^/]+)(/.*)$|', $url, $m ) )
+				continue;
 
-				$urls[] = $m[1] . '/' . $this->_purge_slug . $m[2];
-				if( $this->_mobile_purge_slug )
-					$urls[] = $m[1] . '/' . $this->_mobile_purge_slug . $m[2];
+			$urls[] = $m[1] . '/' . $this->_purge_slug . $m[2];
+			if ( $this->_mobile_purge_slug )
+				$urls[] = $m[1] . '/' . $this->_mobile_purge_slug . $m[2];
 
-			}
 		}
 
-		if( empty( $urls ) )
+		if ( empty( $urls ) )
 			return;
 
 		foreach( array_unique( $urls ) as $uri )
@@ -246,13 +255,14 @@ class RA_Nginx_Proxy_Cache_Purge {
 	}
 }
 
+global $ra_nginx_proxy_cache_purge;
 $ra_nginx_proxy_cache_purge = new RA_Nginx_Proxy_Cache_Purge();
 
 function ranpcp_purge_urls( $args ) {
 
 	global $ra_nginx_proxy_cache_purge;
 
-	if( is_object( $ra_nginx_proxy_cache_purge ) )
+	if ( is_object( $ra_nginx_proxy_cache_purge ) )
 		$ra_nginx_proxy_cache_purge->purge_urls( $args );
 
 }
