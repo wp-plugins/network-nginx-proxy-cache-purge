@@ -43,6 +43,7 @@ This plugin was written by [Ron Rennick](http://ronandandrea.com/) in collaborat
 = 0.3 =
 * fix parameter on get_object_terms
 * automatically include custom taxonomies on CPTs
+* add purge action link to public CPTs
 
 = 0.2 =
 * Original version.

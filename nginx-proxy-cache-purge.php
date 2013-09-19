@@ -52,8 +52,8 @@ class RA_Nginx_Proxy_Cache_Purge {
 
 		add_action( 'edit_post', array( $this, 'purge_post' ), 10, 2 );
 		add_action( 'admin_init', array( $this, 'purge_single_post' ) );
-		add_filter( 'post_row_actions', array( $this, 'post_row_actions' ), 10, 2 );
-		add_filter( 'page_row_actions', array( $this, 'post_row_actions' ), 10, 2 );
+		foreach( (array) get_post_types( array( 'public' => true ) ) as $type )
+			add_filter( $type . '_row_actions', array( $this, 'post_row_actions' ), 10, 2 );
 
 		$this->_purge_slug = apply_filters( 'ranpcp_purge_slug', 'purge' );
 		$mobile_slug = '';
